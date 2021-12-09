@@ -6,7 +6,7 @@ addpath(genpath('Tool'));
 clc; clear;
 
 %% CHOOSE DATASETS
-flag = 'f';
+flag = 'd';
 switch flag
     case 'd'
         load('Fig_3_d_g_Datasets.mat');
@@ -121,4 +121,4 @@ scatter(nTotal, errASGS(5,:), '*', 'MarkerEdgeColor', '#77AC30');
 scatter(nTotal, errASGS(6,:), '*', 'MarkerEdgeColor', '#4DBEEE');
 hold off;
 set(gca, 'xlim', [3 1300]);
-suptitle(figTitle);
+sgtitle(figTitle);

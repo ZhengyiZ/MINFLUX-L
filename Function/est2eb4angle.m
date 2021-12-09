@@ -10,9 +10,9 @@ function [err, bias] = est2eb4angle(a, a0)
 
 % Correction for angles
 if a0 > 0
-    a(a<0) = a(a<0) + 180;
+    a(abs(a-a0)>=70) = a(abs(a-a0)>=70) + 180;
 elseif a0 < 0
-    a(a>0) = a(a>0) - 180;
+    a(abs(a-a0)>=70) = a(abs(a-a0)>=70) - 180;
 end
 
 if isvector(a)
