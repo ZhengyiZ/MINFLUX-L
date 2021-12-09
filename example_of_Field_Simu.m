@@ -147,33 +147,30 @@ crbXY = numCalCRB('xy', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0));
 [errXYAdam, biasXYAdam] = est2eb(xAdam, xx, yAdam, yy);
 [errXYSGS, biasXYSGS] = est2eb(xSGS, xx, ySGS, yy);
 [errXYmLMS, biasXYmLMS] = est2eb(xmLMS, xx, ymLMS, yy);
-if contains(mode, 'LDS', 'IgnoreCase', true)
-    crbA = numCalCRB('A', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0));
-    crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0)));
-%     phiAdam = asin( sin(phiAdam) );
-    [errPhiAdam, biasPhiAdam] = est2eb(rad2deg(phiAdam), phi0);
-    [errAAdam, biasAAdam] = est2eb(AAdam, A0);
-    [errPhiSGS, biasPhiSGS] = est2eb(rad2deg(phiSGS), phi0);
-    [errASGS, biasASGS] = est2eb(ASGS, A0);
-end
 
 figure,
 subplot 221, imagesc(xV, yV, crbXY), axis image;
-colorbar; title('xy-CRB');
+colorbar; title('Precision_{xy} - CRB (nm)');
 subplot 222, imagesc(xV, yV, errXYAdam), axis image;
-colorbar; title('xy-Adam');
+colorbar; title('RMSE_{xy} - Adam (nm)');
 subplot 223, imagesc(xV, yV, errXYSGS), axis image;
-colorbar; title('xy-SGS');
+colorbar; title('RMSE_{xy} - SGS (nm)');
 subplot 224, imagesc(xV, yV, errXYmLMS), axis image;
 colorbar;
 if contains(mode, ["doughnut-4" "doughnut-7" "gaussian-4"...
         "gaussian-7" "LDS-2-6" "LDS-3-9"], 'IgnoreCase', true)
-    title('xy-mLMS');
+    title('RMSE_{xy} - mLMS (nm)');
 else
-    title('xy-LMS');
+    title('RMSE_{xy} - LMS (nm)');
 end
 
 if contains(mode, 'LDS', 'IgnoreCase', true)
+    crbA = numCalCRB('A', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0));
+    crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0)));
+    [errPhiAdam, biasPhiAdam] = est2eb4angle(rad2deg(phiAdam), phi0);
+    [errAAdam, biasAAdam] = est2eb(AAdam, A0);
+    [errPhiSGS, biasPhiSGS] = est2eb4angle(rad2deg(phiSGS), phi0);
+    [errASGS, biasASGS] = est2eb(ASGS, A0);
     figure,
     subplot 231, imagesc(xV, yV, crbA), axis image;
     colorbar; title('A-CRB');

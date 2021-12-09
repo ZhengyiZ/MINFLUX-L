@@ -18,12 +18,12 @@ crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2ra
 
 % RMSE and bias of Adam
 [errXYAdam, biasXYAdam] = est2eb(xAdam, xx, yAdam, yy);
-[errPhiAdam, biasPhiAdam] = est2eb(rad2deg(phiAdam), phi0);
+[errPhiAdam, biasPhiAdam] = est2eb4angle(rad2deg(phiAdam), phi0);
 [errAAdam, biasAAdam] = est2eb(AAdam, A0);
 
 % RMSE and bias of SGS
 [errXYSGS, biasXYSGS] = est2eb(xSGS, xx, ySGS, yy);
-[errPhiSGS, biasPhiSGS] = est2eb(rad2deg(phiSGS), phi0);
+[errPhiSGS, biasPhiSGS] = est2eb4angle(rad2deg(phiSGS), phi0);
 [errASGS, biasASGS] = est2eb(ASGS, A0);
 
 % RMSE and bias of mLMS
@@ -33,7 +33,7 @@ crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2ra
 % Fig. 3(a)
 figure,
 imagesc(x0, y0, errXYAdam), axis image;
-axis off; colorbar; title('xy-Adam');hold on;
+axis off; colorbar; title('RMSE_{xy} - Adam (nm)'); hold on;
 set(gca,'clim',[1.5 5.5]);
 % profile
 dashline([-55;60], [0;0], 5, 2.5, 5, 2.5, 'color', 'w', 'LineWidth', 1);
@@ -65,6 +65,7 @@ hold off;
 ind = 14;
 figure,
 plot(x0, crbXY(ind,:), 'LineWidth',2,'color','#EDB120'); hold on;
+xlabel('Position (nm)'); ylabel('Precision_{xy} (nm)');
 errorbar(x0, errXYAdam(ind,:), biasXYAdam(ind,:),'o','Color','#D95319',...
     'MarkerSize',5,'MarkerEdgeColor','#D95319','MarkerFaceColor','#D95319');
 errorbar(x0, errXYSGS(ind,:), biasXYSGS(ind,:),'s','Color','#0072BD',...
@@ -80,6 +81,7 @@ set(gca,'xlim',[-50 50]);
 figure,
 subplot 211,
 plot(x0, crbPhi(ind,:), 'LineWidth',2,'color','#EDB120'); hold on;
+xlabel('Position (nm)'); ylabel('Precision_{\phi} (°)');
 errorbar(x0, errPhiAdam(ind,:), biasPhiAdam(ind,:),'o','Color','#D95319',...
     'MarkerSize',5,'MarkerEdgeColor','#D95319','MarkerFaceColor','#D95319');
 errorbar(x0, errPhiSGS(ind,:), biasPhiSGS(ind,:),'s','Color','#0072BD',...
@@ -90,6 +92,7 @@ xticks([-50 -25 0 25 50]);
 set(gca,'ylim',[3 8]);
 subplot 212,
 plot(x0, crbA(ind,:), 'LineWidth',2,'color','#EDB120'); hold on;
+xlabel('Position (nm)'); ylabel('Precision_{A}');
 errorbar(x0, errAAdam(ind,:), biasAAdam(ind,:),'o','Color','#D95319',...
     'MarkerSize',5,'MarkerEdgeColor','#D95319','MarkerFaceColor','#D95319');
 errorbar(x0, errASGS(ind,:), biasASGS(ind,:),'s','Color','#0072BD',...

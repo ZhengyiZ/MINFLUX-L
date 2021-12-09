@@ -47,8 +47,8 @@ for i = 1:length(L)
 end
 
 % Phi
-[errPhiAdam, biasPhiAdam] = est2eb(rad2deg(phiAdam), phi0);
-[errPhiSGS, biasPhiSGS] = est2eb(rad2deg(phiSGS), phi0);
+[errPhiAdam, biasPhiAdam] = est2eb4angle(rad2deg(phiAdam), phi0);
+[errPhiSGS, biasPhiSGS] = est2eb4angle(rad2deg(phiSGS), phi0);
 for i = 1:length(L)
     for j = 1:length(nTotal)
         crbPhi(i,j) = rad2deg(numCalCRB('phi', mode, fwhm, L(i), nTotal(j),...
@@ -79,13 +79,14 @@ scatter(nTotal, errXYSGS(6,:), '*', 'MarkerEdgeColor', '#4DBEEE');
 hold off;
 set(gca, 'xlim', [3 1300]);
 set(gca, 'ylim', [0.1 200]);
-xlabel('N'); ylabel('error/nm');
+xlabel('N'); ylabel('Precision_{xy} (nm)');
 legend([s1;s2;s3], labels, 'Location', 'best', 'NumColumns', 2);
 title(figTitle);
 
 figure,
 subplot 211,
 s21 = loglog(nTotal, crbPhi, 'color', '#A2142F');
+xlabel('N'); ylabel('Precision_{\phi} (°)');
 hold on;
 s22 = scatter(nTotal, errPhiAdam(1,:), 'MarkerEdgeColor', '#0072BD');
 scatter(nTotal, errPhiAdam(2,:), 'MarkerEdgeColor', '#D95319');
@@ -104,6 +105,7 @@ set(gca, 'xlim', [3 1300]);
 legend([s21(1), s22, s23], "CRB", "Adam", "SGS", 'Location', 'best');
 
 subplot 212, loglog(nTotal, crbA, 'color', '#A2142F');
+xlabel('N'); ylabel('Precision_{A}');
 hold on;
 scatter(nTotal, errAAdam(1,:), 'MarkerEdgeColor', '#0072BD');
 scatter(nTotal, errAAdam(2,:), 'MarkerEdgeColor', '#D95319');	

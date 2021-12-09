@@ -16,7 +16,7 @@ fwhm            = 300;
 %             'LDS-2-4' | 'LDS-2-5' | 'LDS-2-6'
 %             'LDS-3-6' | 'LDS-3-7' | 'LDS-3-9'
 %             'xxxxxxxx' could be 'Gaussian' or 'Doughnut'
-mode            = 'LDS-2-6';
+mode            = 'LDS-3-9';
 % beam center displacement
 L               = 100;
 % total photon counts
@@ -42,10 +42,12 @@ dispPSF(psf, mode);
 % calculate CRB
 crbXY = numCalCRB('xy', mode, fwhm, L, N, SBR, x0, y0, A0, deg2rad(phi0));
 figure, imagesc(xV, yV, crbXY); axis image; colorbar;
+title('Precision_{xy} (nm)');
 crbXYmin = min(crbXY, [], 'all');
 set(gca, 'clim', [crbXYmin crbXYmin+50]);
 % profile
 figure, plot( crbXY(:, round(size(crbXY,2)/2)) );
+xlabel('x Position (nm)'); ylabel('Precision_{xy} (nm)');
 
 %% CALCULATE CRB FOR A/PHI IN XY PLANE
 if contains(mode, 'LDS', 'IgnoreCase', true)
@@ -53,7 +55,9 @@ if contains(mode, 'LDS', 'IgnoreCase', true)
     crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, N, SBR, x0, y0, A0, deg2rad(phi0)));
     figure,
     subplot 121, imagesc(xV, yV, crbA); axis image; colorbar;
+    title('Precision_A');
     subplot 122, imagesc(xV, yV, crbPhi); axis image; colorbar;
+    title('Precision_\phi (°）');
 else
     disp('Only LDS modes can calculate polarization parameters.');
 end

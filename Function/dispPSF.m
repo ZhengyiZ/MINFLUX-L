@@ -119,6 +119,9 @@ for i = 1 : row
         end
     end
 end
+
+suptitle('EBP');
+
 % draw colorbar
 if contains(mode, ["doughnut-3" "gaussian-3" "doughnut-4" "gaussian-4"], 'IgnoreCase', true)
     cbPos = [1-right_margin-fig_margin-fig_s, btm_margin, 0.2, 1-(top_margin+btm_margin)];
