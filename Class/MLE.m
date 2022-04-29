@@ -124,8 +124,8 @@ classdef MLE < handle
             end
             
             if nargin < 7
-                lr = 0.1;
-                lrPenalty = 5;
+                lr = 1;
+                lrPenalty = 100;
             end
             
             if nargin < 10
@@ -193,7 +193,8 @@ classdef MLE < handle
                 
                 alpha = modeAlpha(obj.mode);
                 Polar = PExtend(obj.P, obj.mode);
-                lr = [ones(1,2)*lr ones(1,1)*lr/lrPenalty ones(1,1)*lr/lrPenalty];
+                lr = [ones(1,2)*lr ones(1,1)*lr/lrPenalty ...
+                    ones(1,1)*lr/lrPenalty*2*pi];
                 if visFlag
                     equal_lr = zeros(iterations,4);
                     History = zeros(iterations,4);
@@ -206,7 +207,8 @@ classdef MLE < handle
                     
                     % calculate current evaluation function
                     if visFlag
-                        eval(t) = evalFun(obj.mode, obj.nVector, psf, obj.SBR, Polar, A, phi);
+                        eval(t) = evalFun(obj.mode, obj.nVector, psf,...
+                            obj.SBR, Polar, A, phi);
                     end
                     
                     polarItem = A * cos(phi-alpha).^2 + (1-A)/2;
@@ -246,7 +248,7 @@ classdef MLE < handle
                     y = y + delta(2);
                     A = A + delta(3);
                     A = min(max(A,1e-5),1);         % limit the range of At
-                    phi = atan(tan(phi + delta(4)));
+                    phi = asin(sin(phi + delta(4)));
                     
                     % record history
                     if visFlag

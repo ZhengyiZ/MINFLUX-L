@@ -120,7 +120,7 @@ for i = 1 : row
     end
 end
 
-suptitle('EBP');
+% suptitle('EBP');
 
 % draw colorbar
 if contains(mode, ["doughnut-3" "gaussian-3" "doughnut-4" "gaussian-4"], 'IgnoreCase', true)

@@ -15,8 +15,7 @@ mode            = 'LDS-3-9';
 % beam center displacement
 L               = 100;
 SBR             = 3;
-nTotal          = 13;
-laserPower      = 60;
+laserPower      = 150;
 threshold       = 60;
 
 % polarization non-uniformity, only valid for LDS dark spot
@@ -42,7 +41,7 @@ dipole.A0       = 0.5;
 % create LMS object
 lms = LMS(mode, fwhm, L, P);
 lms.SBR = SBR;
-lms.nVector = nTotal;
+lms.nVector = laserPower/10;
 beta = lms.calBeta(1);
 
 % calculate the Lissajous curve
@@ -53,88 +52,63 @@ dipole.y = dipole.y + dipole.Offset.y;
 %% LIVE TRAJECTORY
 psf = numCal(mode, fwhm, 0, 0, L);
 N = zeros(length(psf), trackPoint);
-Q = zeros(1, trackPoint);
 live.x = 0;
 live.y = 0;
 record.live.x = zeros(trackPoint, 1);
 record.live.y = record.live.x;
-TWB = Timerwaitbar(trackPoint, 'Processing...');
+
+textwaitbar(0, trackPoint/100, 'Tracking');
 
 for i = 1:trackPoint
-        
-        % record current beam position before generate counts
-        record.live.x(i) = live.x;
-        record.live.y(i) = live.y;
-        
-        dipole.orient = cos(dipole.phi(i));
-        
-        % calculate (x,y) point's psf & beam polarization
-        % [psf, orient] = debye.calSP(x(i)-xCurr,y(i)-yCurr,0,L);
-        psf = numCal(mode, fwhm, dipole.x(i)-live.x, dipole.y(i)-live.y, L);
-        
-        if contains(mode, ["gaussian", "doughnut"], 'IgnoreCase', true)
-            lambda = psf;
-        else
-            % lambda = PExtend(P, mode) .* psf .* ...
-            % (A * dot(orient,dotDimExpan(obj_orient,length(orient)),2).^2 + (1-A)/2);
-            lambda = PExtend(P, mode) .* psf .* ...
-                (dipole.A0 * cos(dipole.phi(i)-modeAlpha(mode)).^2 + (1-dipole.A0)/2);
-        end
-        p0 = lambda / sum(lambda) * (laserPower/10);
-        bg = sum(p0) / (SBR+1) / length(p0);
-        
-        pData = zeros(nTotal*length(p0), length(p0));
-        bgData = pData;
-        for k = 1:length(p0)
-            pData(:,k) = poissrnd(p0(k), nTotal*length(p0), 1);
-            bgData(:,k) = poissrnd(bg, nTotal*length(p0), 1);
-        end
-        pb = pData + bgData;
-        n = zeros(length(p0),1);
-        count = 1;
-        while sum(n) < nTotal
-            if count > 1 && sum(n)+sum(pb(count,:)) > 1.5*nTotal
-                break;
-            end
-            for k = 1:length(p0)
-                n(k) = n(k) + pb(count, k);
-            end
-            count = count + 1;
-            if count > length(pData)
-                error('not enough.');
-            end
-        end
-        Q(:,i) = count;
-        N(:,i) = n;
-        
-        % running lms
-        lms.nVector = N(:,i);
-        [xmLMS, ymLMS] = lms.calmLMS;
-        
-        % update live position only if the solution is reasonable
-        if sqrt(xmLMS^2 + ymLMS^2) < threshold
-            live.x = live.x + xmLMS;
-            live.y = live.y + ymLMS;
-        end
-    
-    TWB.update();
-    
+
+    % record current beam position before generate counts
+    record.live.x(i) = live.x;
+    record.live.y(i) = live.y;
+
+    % calculate (x,y) point's psf & beam polarization
+%     [p0, bg] = debyeGenPB(debye, dipole.x(i)-live.x, dipole.y(i)-live.y,...
+%         0, L, SBR, dipole.A0, deg2rad(theta0), dipole.phi(i), P);
+    [p0, bg] = numGenPB(mode, fwhm, dipole.x(i)-live.x, dipole.y(i)-live.y,...
+        L, SBR, dipole.A0, deg2rad(dipole.phi(i)), P);
+    n = phyGenCount1(p0, bg, laserPower);
+    N(:,i) = n;
+
+    % running lms
+    lms.nVector = N(:,i);
+    [xmLMS, ymLMS] = lms.calmLMS;
+
+    % update live position only if the solution is reasonable
+    if sqrt(xmLMS^2 + ymLMS^2) < threshold
+        live.x = live.x + xmLMS;
+        live.y = live.y + ymLMS;
+    end
+
+    if mod(i,100) == 0
+        textwaitbar(i/100, trackPoint/100, 'Tracking');
+    end
+
 end
 
-TWB.delete();
-
+% N-hist
+Nmean = mean(sum(N,1));
 figure,
-plot(record.live.x,record.live.y);
+histogram(sum(N,1));
+hold on;
+plot([Nmean, Nmean], get(gca, 'YLim'), 'LineStyle','-', 'LineWidth', 2);
+hold off;
+fprintf('The average number of photons is %.2f.\n', Nmean);
+
+% live trajectory
+figure,
+plot(record.live.x, record.live.y);
 set(gca, 'xlim', [-300 300]);
 set(gca, 'ylim', [-300 300]);
 hold on;
-patch(dipole.x,dipole.y,dipole.phi,'EdgeColor','flat','FaceColor','none','LineWidth',3);
+patch(dipole.x, dipole.y, rad2deg(dipole.phi), 'EdgeColor', 'flat',...
+    'FaceColor', 'none', 'LineWidth', 3);
 colormap('hsv');
 colorbar;
 axis square;
-
-disp(['The average number of photons is ' num2str(mean(sum(N,1))) '.']);
-disp(['The average number of EBP is ' num2str(mean(Q)) '.']);
 
 %% POST-PROCESS
 MLEobj = MLE(mode, fwhm, L, P);
@@ -144,47 +118,72 @@ for i = 1:trackPoint
     lms.nVector = N(:,i);
     [xmLMS, ymLMS] = lms.calmLMS;
     MLEobj.nVector = N(:,i);
-    [xAdam, yAdam, AAdam, phiAdam] = MLEobj.Adam(0, xmLMS, ymLMS);
-    if sqrt(xAdam^2 + yAdam^2) <= threshold
-        record.post.x(i) = record.live.x(i) + xAdam;
-        record.post.y(i) = record.live.y(i) + yAdam;
-        record.post.A(i) = AAdam;
-        record.post.phi(i) = phiAdam;
+    [xSolve, ySolve, ASolve, phiSolve] = MLEobj.Adam(0, xmLMS, ymLMS);
+%     [xSolve, ySolve, ASolve, phiSolve] = MLEobj.GridSearch(0);
+    if sqrt(xSolve^2 + ySolve^2) <= threshold
+        record.post.x(i) = record.live.x(i) + xSolve;
+        record.post.y(i) = record.live.y(i) + ySolve;
+        record.post.A(i) = ASolve;
+        record.post.phi(i) = phiSolve;
     else
-        if i ~= 1
-            record.post.x(i) = record.post.x(i-1);
-            record.post.y(i) = record.post.y(i-1);
-            record.post.A(i) = AAdam;
-            record.post.phi(i) = phiAdam;
-        else
-            record.post.x(i) = 0;
-            record.post.y(i) = 0;
-            record.post.A(i) = AAdam;
-            record.post.phi(i) = phiAdam;
-        end
+        record.post.x(i) = NaN;
+        record.post.y(i) = NaN;
+        record.post.A(i) = NaN;
+        record.post.phi(i) = NaN;
     end
     TWB.update();
 end
     
 TWB.delete();
 
+%% DISPLAY
+% errXY histogram & gamma fit
+errXY = sqrt( ( (record.post.x-dipole.x).^2 +...
+    (record.post.y-dipole.y).^2 ) );
+errXY = errXY(~isnan(errXY));
+figure, histogram(errXY);
+[phat, pci] = gamfit(errXY);
+fprintf('XY:\tμ = %.2f\tσ = %.2f\n', phat(1)*phat(2),...
+    sqrt(phat(1))*phat(2));
+
 if contains(mode, 'LDS')
+
+    % errPhi histogram & norm fit
+    errPhi = est2errV4angle(rad2deg(record.post.phi), rad2deg(dipole.phi));
+    errPhi = errPhi(~isnan(errPhi));
+    figure, histogram(errPhi);
+    [muPhi, sigmaPhi] = normfit(errPhi);
+    fprintf('Φ:\tμ = %.2f\tσ = %.2f\n', muPhi, sigmaPhi);
+
+    % errA histogram & norm fit
+    errA = record.post.A - dipole.A0;
+    errA = errA(~isnan(errA));
+    figure, histogram(errA);
+    [muA, sigmaA] = normfit(errA);
+    fprintf('A:\tμ = %.2f\tσ = %.2f\n', muA, sigmaA);
+
+    % phi trajectory
     figure,
-    patch(record.post.x, record.post.y, record.post.phi,...
-        'EdgeColor','flat','FaceColor','none');
+    patch(record.post.x, record.post.y, rad2deg(record.post.phi),...
+        'EdgeColor', 'flat', 'FaceColor', 'none');
     colormap('hsv'); colorbar; axis square;
     set(gca, 'xlim', [-300 300]);
     set(gca, 'ylim', [-300 300]);
     
+    % A trajectory
     figure,
     patch(record.post.x, record.post.y, record.post.A,...
-        'EdgeColor','flat','FaceColor','none');
+        'EdgeColor', 'flat', 'FaceColor', 'none');
     colormap('default'); colorbar; axis square;
     set(gca, 'xlim', [-300 300]);
     set(gca, 'ylim', [-300 300]);
+
 else
+
+    % post trajectory
     figure,
     plot(record.post.x, record.post.y); axis square;
     set(gca, 'xlim', [-300 300]);
     set(gca, 'ylim', [-300 300]);
+
 end

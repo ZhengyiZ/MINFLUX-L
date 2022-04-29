@@ -7,14 +7,20 @@ clc; clear;
 
 %% CALCULATION
 % load datasets
-load('Fig_3_a_to_c_Datasets.mat');
+load('Fig_4_a_to_c_Datasets.mat');
 x0 = xStart:pixelSize:xStop;
 y0 = yStart:pixelSize:yStop;
 
 % calculate CRB
-crbXY = numCalCRB('xy', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0));
-crbA = numCalCRB('A', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0));
-crbPhi = rad2deg(numCalCRB('phi', mode, fwhm, L, nTotal, SBR, xx, yy, A0, deg2rad(phi0)));
+[psf,psfGx,psfGy] = numCal(mode,fwhm,xx,yy,L);
+alpha = rad2deg(modeAlpha(mode));
+for i = 1:length(x0)
+    for j = 1:length(y0)
+        [crbXY(i,j), crbA(i,j), crbPhi(i,j)] = ...
+        covCalCRB(calCovMat(psf(i,j,:), psfGx(i,j,:), psfGy(i,j,:),...
+        A0, alpha, phi0, SBR, nTotal));
+    end
+end
 
 % RMSE and bias of Adam
 [errXYAdam, biasXYAdam] = est2eb(xAdam, xx, yAdam, yy);

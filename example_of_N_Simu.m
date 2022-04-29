@@ -18,20 +18,20 @@ SBR             = 10;
 nTotal          = unique(round(logspace(0.4,3.1,20)));
 
 % dipole position
-x0              = L/4;
+x0              = L/4*0;
 y0              = 0;
 
 % polarization parameters, only valid for LDS
 P               = [1 0.95 0.92];    % non-uniformity
-A0              = 1;                % polarization modulation depth
-phi0            = 75;               % azimuth angle, unit: degree.
+A0              = 0.5;                % polarization modulation depth
+phi0            = 80;               % azimuth angle, unit: degree.
 
-timesEveryPoint = 10^3;
+timesEveryPoint = 10^2;
 
 % Adam parameters
-iterations      = 1000;
-lr              = 1;
-lrPenalty       = 10;
+iterations      = 500;
+lr              = 2;
+lrPenalty       = 400;
 
 %% INITIALIZE
 N = cell(length(L), length(nTotal), timesEveryPoint);

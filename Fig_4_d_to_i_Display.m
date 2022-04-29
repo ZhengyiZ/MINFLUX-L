@@ -6,16 +6,16 @@ addpath(genpath('Tool'));
 clc; clear;
 
 %% CHOOSE DATASETS
-flag = 'd';
+flag = 'f';
 switch flag
     case 'd'
-        load('Fig_3_d_g_Datasets.mat');
+        load('Fig_4_d_g_Datasets.mat');
         figTitle = 'y = 0';
     case 'e'
-        load('Fig_3_e_h_Datasets.mat');
+        load('Fig_4_e_h_Datasets.mat');
         figTitle = 'y = L/4';
     case 'f'
-        load('Fig_3_f_i_Datasets.mat');
+        load('Fig_4_f_i_Datasets.mat');
         figTitle = 'y = L/2';
 end
 
@@ -27,10 +27,18 @@ errXYSGS = crbXY; biasXYSGS = crbXY;
 crbA = zeros(size(nTotal));
 crbPhi = zeros(size(nTotal));
 
+alpha = rad2deg(modeAlpha(mode));
+for i = 1:length(L)
+    [psf,psfGx,psfGy] = numCal(mode,fwhm,x0(i),y0,L(i));
+    for j = 1:length(nTotal)
+        [crbXY(i,j), crbA(i,j), crbPhi(i,j)] = ...
+            covCalCRB(calCovMat(psf, psfGx, psfGy,...
+            A0, alpha, phi0, SBR, nTotal(j)));
+    end
+end
+
 % XY
 for i = 1:length(L)
-    crbXY(i,:) = numCalCRB('xy', mode, fwhm, L(i), nTotal, SBR,...
-        x0(i), y0, A0, deg2rad(phi0));
     [errXYAdam(i,:), biasXYAdam(i,:)] = est2eb(xAdam(i,:,:), x0(i),...
         yAdam(i,:,:), y0);
     [errXYSGS(i,:), biasXYSGS(i,:)] = est2eb(xSGS(i,:,:), x0(i),...
@@ -39,22 +47,10 @@ end
 % A
 [errAAdam, biasAAdam] = est2eb(AAdam, A0);
 [errASGS, biasASGS] = est2eb(ASGS, A0);
-for i = 1:length(L)
-    for j = 1:length(nTotal)
-    crbA(i,j) = numCalCRB('A', mode, fwhm, L(i), nTotal(j), SBR,...
-        x0(i), y0, A0, deg2rad(phi0));
-    end
-end
 
 % Phi
 [errPhiAdam, biasPhiAdam] = est2eb4angle(rad2deg(phiAdam), phi0);
 [errPhiSGS, biasPhiSGS] = est2eb4angle(rad2deg(phiSGS), phi0);
-for i = 1:length(L)
-    for j = 1:length(nTotal)
-        crbPhi(i,j) = rad2deg(numCalCRB('phi', mode, fwhm, L(i), nTotal(j),...
-            SBR, x0(i), y0, A0, deg2rad(phi0)));
-    end
-end
 
 %% DISPLAY
 labels = {'L = 25 nm', 'L = 50 nm', 'L = 75 nm', 'L = 100 nm',...
@@ -85,7 +81,7 @@ title(figTitle);
 
 figure,
 subplot 211,
-s21 = loglog(nTotal, crbPhi, 'color', '#A2142F');
+s21 = loglog(nTotal, crbPhi);
 xlabel('N'); ylabel('Precision_{\phi} (°)');
 hold on;
 s22 = scatter(nTotal, errPhiAdam(1,:), 'MarkerEdgeColor', '#0072BD');
@@ -104,7 +100,7 @@ hold off;
 set(gca, 'xlim', [3 1300]);
 legend([s21(1), s22, s23], "CRB", "Adam", "SGS", 'Location', 'best');
 
-subplot 212, loglog(nTotal, crbA, 'color', '#A2142F');
+subplot 212, loglog(nTotal, crbA);
 xlabel('N'); ylabel('Precision_{A}');
 hold on;
 scatter(nTotal, errAAdam(1,:), 'MarkerEdgeColor', '#0072BD');
